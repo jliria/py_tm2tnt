@@ -144,16 +144,16 @@ class py_tm2tntApp:
             data_by_species = {species: [m[char_index] for m in measurements]
                                for species, measurements in self.traditional_measurements.items()}
         
-            # Evaluar la normalidad en cada grupo
+            # Normality test
             normal_data = all(shapiro(values)[1] > 0.05 for values in data_by_species.values() if len(values) > 1)
         
-            # Verificar homogeneidad de varianza solo si los datos son normales
+            # Variance test
             if normal_data:
                 homogeneity_of_variance = levene(*data_by_species.values())[1] > 0.05
             else:
                 homogeneity_of_variance = False
 
-            # Selección de prueba en función de los resultados
+            # Statistical test selection
             if normal_data and homogeneity_of_variance:
                 f_stat, p_value = f_oneway(*data_by_species.values())
                 test_used = "ANOVA"
@@ -161,17 +161,17 @@ class py_tm2tntApp:
                 h_stat, p_value = kruskal(*data_by_species.values())
                 test_used = "Kruskal-Wallis"
 
-            # Ajuste para valores de p pequeños
+            # Small p values
             if p_value < 0.0001:
                 p_value_str = f"{p_value:.2e}"
             else:
                 p_value_str = f"{p_value:.6f}"
 
             species = list(data_by_species.keys())
-            num_comparisons = len(list(combinations(species, 2)))  # Número de comparaciones
-            corrected_alpha = 0.05 / num_comparisons  # Corrección de Bonferroni
+            num_comparisons = len(list(combinations(species, 2)))  # Num comparisons
+            corrected_alpha = 0.05 / num_comparisons  # Bonferroni correction
 
-            # Comparaciones pareadas con corrección de Bonferroni
+            # Paired comparisons with Bonferroni corrections
             pairwise_results = []
             for (sp1, sp2) in combinations(species, 2):
                 try:
@@ -180,7 +180,7 @@ class py_tm2tntApp:
                     if pair_p < corrected_alpha:
                         pairwise_results.append(f"{sp1}-{sp2}")
                 except:
-                    continue  # Ignora errores en comparaciones
+                    continue  # Ignore errors in comparisons
 
             significant_results.append({
                 "Character": char_index + 1,
