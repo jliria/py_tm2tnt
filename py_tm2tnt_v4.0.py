@@ -137,50 +137,59 @@ class py_tm2tntApp:
             messagebox.showerror("Error", f"Could not calculate intervals: {e}")
 
     def perform_statistical_analysis(self):
+        # Check for species with fewer than 10 specimens and display a warning
+        insufficient_species = [species for species, measurements in self.traditional_measurements.items() if len(measurements) < 10]
+    
+        if insufficient_species:
+            # Display a warning if there are species with fewer than 10 specimens
+            species_list = ", ".join(insufficient_species)
+            messagebox.showwarning("Insufficient Specimens", f"The following species have fewer than 10 specimens and will be analyzed with Kruskal-Wallis instead of ANOVA: {species_list}")
+    
+        # Proceed with analysis, filtering out species with fewer than 5 specimens
+        data_for_analysis = {species: measurements for species, measurements in self.traditional_measurements.items() if len(measurements) >= 5}
+    
+        if not data_for_analysis:
+            messagebox.showinfo("No Data for Analysis", "No species have enough specimens (5 or more) to perform statistical analysis.")
+            return
+
         significant_results = []
-        num_characters = len(next(iter(self.traditional_measurements.values()))[0])
+        num_characters = len(next(iter(data_for_analysis.values()))[0])
 
         for char_index in range(num_characters):
-            data_by_species = {species: [m[char_index] for m in measurements]
-                               for species, measurements in self.traditional_measurements.items()}
+            # Gather data by species for the current character, only including species with 5 or more specimens
+            data_by_species = {species: [m[char_index] for m in measurements] for species, measurements in data_for_analysis.items()}
         
-            # Normality test
-            normal_data = all(shapiro(values)[1] > 0.05 for values in data_by_species.values() if len(values) > 1)
-        
-            # Variance test
-            if normal_data:
-                homogeneity_of_variance = levene(*data_by_species.values())[1] > 0.05
+            # Determine the type of statistical test based on the number of specimens
+            if all(len(values) >= 10 for values in data_by_species.values()):
+                # Perform ANOVA if all species have at least 10 specimens
+                try:
+                    f_stat, p_value = f_oneway(*data_by_species.values())
+                    test_used = "ANOVA"
+                except Exception:
+                    h_stat, p_value = kruskal(*data_by_species.values())
+                    test_used = "Kruskal-Wallis"
             else:
-                homogeneity_of_variance = False
-
-            # Statistical test selection
-            if normal_data and homogeneity_of_variance:
-                f_stat, p_value = f_oneway(*data_by_species.values())
-                test_used = "ANOVA"
-            else:
+                # Perform Kruskal-Wallis if any species has between 5 and 9 specimens
                 h_stat, p_value = kruskal(*data_by_species.values())
                 test_used = "Kruskal-Wallis"
 
-            # Small p values
-            if p_value < 0.0001:
-                p_value_str = f"{p_value:.2e}"
-            else:
-                p_value_str = f"{p_value:.6f}"
+            # Format for small p-values
+            p_value_str = f"{p_value:.2e}" if p_value < 0.0001 else f"{p_value:.6f}"
 
+            # Perform paired comparisons only if the p-value is significant
             species = list(data_by_species.keys())
-            num_comparisons = len(list(combinations(species, 2)))  # Num comparisons
-            corrected_alpha = 0.05 / num_comparisons  # Bonferroni correction
+            num_comparisons = len(list(combinations(species, 2)))
+            corrected_alpha = 0.05 / num_comparisons  # Apply Bonferroni correction
 
-            # Paired comparisons with Bonferroni corrections
             pairwise_results = []
             for (sp1, sp2) in combinations(species, 2):
                 try:
-                    _, pair_p = f_oneway(data_by_species[sp1], data_by_species[sp2]) \
-                        if test_used == "ANOVA" else kruskal(data_by_species[sp1], data_by_species[sp2])
+                    _, pair_p = (f_oneway(data_by_species[sp1], data_by_species[sp2]) 
+                                if test_used == "ANOVA" else kruskal(data_by_species[sp1], data_by_species[sp2]))
                     if pair_p < corrected_alpha:
                         pairwise_results.append(f"{sp1}-{sp2}")
                 except:
-                    continue  # Ignore errors in comparisons
+                    continue  # Ignore errors
 
             significant_results.append({
                 "Character": char_index + 1,
@@ -189,6 +198,7 @@ class py_tm2tntApp:
                 "Significant Pairs": ", ".join(pairwise_results) if pairwise_results else "None"
             })
 
+        # Save results
         self.analysis_results = significant_results
         self.export_analysis_button.state(['!disabled'])
         messagebox.showinfo("Analysis Completed", "Statistical analysis completed successfully.")
