@@ -17,4 +17,7 @@ Python 3.x
 Launching the program
 1.	Run the script py_tm2tnt.py to open the graphical interface.
 2.	The main window of py_tm2tnt will appear, and you can start loading morphometric data with multiple specimens and performing analyses.
- 
+<br><br>
+Cite as:
+<br><br>
+Liria, Jonathan, y Ana Soto-Vivas. 2025. «py_tps2tnt Y py_tm2tnt: Dos Programas En Python Para Procesamiento De Datos morfométricos En análisis cladísticos Con TNT». Revista Peruana De Biología 32 (2): e30018. https://doi.org/10.15381/rpb.v32i2.30018.
