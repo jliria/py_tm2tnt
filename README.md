@@ -66,7 +66,7 @@ py_tm2tnt/
 ├── LICENSE               # Full distribution text (MIT Open-Source terms)
 ├── README.md             # Repository documentation and landing guide
 ├── py_tm2tnt Manual.pdf  # Comprehensive user operations manual
-└── py_tm2tnt_v4.0.py     # Main Python graphical application source code
+└── py_tm2tnt.py     # Main Python graphical application source code
 ```
 ---
 
