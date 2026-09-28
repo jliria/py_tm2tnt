@@ -10,7 +10,7 @@ from collections import defaultdict
 class py_tm2tntApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("py_tm2tnt 4.0")
+        self.root.title("py_tm2tnt 1.0")
         
         self.traditional_measurements = defaultdict(list)
         self.species_count = {}
